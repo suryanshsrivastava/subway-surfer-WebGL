@@ -1,41 +1,21 @@
 /// <reference path="webgl.d.ts" />
 
-let cube = class {
+let wall = class {
     constructor(gl, pos) {
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 
-        this.positions = [
-             // Front face
-             -1.0, -1.0, 1.0,
-             1.0, -1.0, 1.0,
-             1.0, 1.0, 1.0,
-             -1.0, 1.0, 1.0,
-             //Back Face
-             -1.0, -1.0, -1.0,
-             1.0, -1.0, -1.0,
-             1.0, 1.0, -1.0,
-             -1.0, 1.0, -1.0,
-             //Top Face
-             -1.0, 1.0, -1.0,
-             1.0, 1.0, -1.0,
-             1.0, 1.0, 1.0,
-             -1.0, 1.0, 1.0,
-             //Bottom Face
-             -1.0, -1.0, -1.0,
-             1.0, -1.0, -1.0,
-             1.0, -1.0, 1.0,
-             -1.0, -1.0, 1.0,
-             //Left Face
-             -1.0, -1.0, -1.0,
-             -1.0, 1.0, -1.0,
-             -1.0, 1.0, 1.0,
-             -1.0, -1.0, 1.0,
-             //Right Face
-             1.0, -1.0, -1.0,
-             1.0, 1.0, -1.0,
-             1.0, 1.0, 1.0,
-             1.0, -1.0, 1.0,
+        this.positions = [ 
+             //Left Wall
+             -10.0, 0.0, -1000.0,
+             -10.0, 0.0, 0.0,
+             -10.0, 10.0, 0.0,
+             -10.0, 10.0, -1000.0,
+             //Right Wall
+              10.0, 0.0, -1000.0,
+              10.0, 0.0, 0.0,
+              10.0, 10.0, 0.0,
+              10.0, 10.0, -1000.0,
         ];
 
         this.rotation = 0;
@@ -44,20 +24,42 @@ let cube = class {
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positions), gl.STATIC_DRAW);
         
+        // this.faceColors = [
+            // [ Math.random(),  Math.random(),  Math.random(),  Math.random()],    // Left face: purple
+            // [ Math.random(), Math.random(), Math.random(), Math.random()], 
+            // [ Math.random(), Math.random(), Math.random(), Math.random()], 
+            // [ Math.random(), Math.random(), Math.random(), Math.random()], 
+            // [ Math.random(), Math.random(), Math.random(), Math.random()], 
+            // [ Math.random(), Math.random(), Math.random(), Math.random()],  
+        // ];
+
+        // var colors = [];
+
+        // for (var j = 0; j < this.faceColors.length; ++j) {
+            // const c = this.faceColors[j];
+
+            // Repeat each color four times for the four vertices of the face
+            // colors = colors.concat(c, c, c, c);
+        // }
+
+        // const colorBuffer = gl.createBuffer();
+        // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
         const textureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
         
         const textureCoordinates = [
           // Front
-          0.0,  0.0,
-          1.0,  0.0,
-          1.0,  1.0,
-          0.0,  1.0,
+        //   0.0,  0.0,
+        //   1.0,  0.0,
+        //   1.0,  1.0,
+        //   0.0,  1.0,
           // Back
-          0.0,  0.0,
-          1.0,  0.0,
-          1.0,  1.0,
-          0.0,  1.0,
+        //   0.0,  0.0,
+        //   1.0,  0.0,
+        //   1.0,  1.0,
+        //   0.0,  1.0,
           // Top
           0.0,  0.0,
           1.0,  0.0,
@@ -83,29 +85,6 @@ let cube = class {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates),
                       gl.STATIC_DRAW);
 
-        // this.faceColors = [
-        //     [ Math.random(),  Math.random(),  Math.random(),  Math.random()],    // Left face: purple
-        //     [ Math.random(), Math.random(), Math.random(), Math.random()], // Left face: purple
-        //     [ Math.random(), Math.random(), Math.random(), Math.random()], // Left face: purple
-        //     [ Math.random(), Math.random(), Math.random(), Math.random()], // Left face: purple
-        //     [ Math.random(), Math.random(), Math.random(), Math.random()], // Left face: purple
-        //     [ Math.random(), Math.random(), Math.random(), Math.random()], // Left face: purple
-
-        // ];
-
-        // var colors = [];
-
-        // for (var j = 0; j < this.faceColors.length; ++j) {
-        //     const c = this.faceColors[j];
-
-        //     // Repeat each color four times for the four vertices of the face
-        //     colors = colors.concat(c, c, c, c);
-        // }
-
-        // const colorBuffer = gl.createBuffer();
-        // gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
         // Build the element array buffer; this specifies the indices
         // into the vertex arrays for each face's vertices.
 
@@ -117,12 +96,12 @@ let cube = class {
         // position.
 
         const indices = [
-            0, 1, 2,     0, 2, 3, // front
-            4, 5, 6,     4, 6, 7,
-            8, 9, 10,    8, 10, 11,
-           12, 13, 14,  12, 14, 15,
-           16, 17, 18,  16, 18, 19,
-           20, 21, 22,  20, 22, 23, 
+            0, 1, 2,    0, 2, 3, // front
+            4, 5, 6,    4, 6, 7,
+            8, 9, 10,   8, 10, 11,
+            // 12, 13, 14, 12, 14, 15,
+            // 16, 17, 18, 16, 18, 19,
+            // 20, 21, 22, 20, 22, 23, 
         ];
 
         // Now send the element array to GL
@@ -133,13 +112,13 @@ let cube = class {
         this.buffer = {
             position: this.positionBuffer,
             textureCoord: textureCoordBuffer,
-            // color: colorBuffer,
             indices: indexBuffer,
+            // color: colorBuffer,
         }
 
     }
 
-    drawCube(gl, projectionMatrix, programInfo, texture, deltaTime) {
+    drawWall(gl, projectionMatrix, programInfo, texture, deltaTime) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -147,7 +126,7 @@ let cube = class {
             this.pos
         );
         
-        this.rotation += Math.PI / (((Math.random()) % 100) + 50);
+        // this.rotation += Math.PI / (((Math.random()) % 100) + 50);
 
         mat4.rotate(modelViewMatrix,
             modelViewMatrix,
@@ -212,7 +191,7 @@ let cube = class {
             programInfo.uniformLocations.modelViewMatrix,
             false,
             modelViewMatrix);
-        
+
         // Tell WebGL we want to affect texture unit 0
         gl.activeTexture(gl.TEXTURE0);
                 
@@ -223,10 +202,11 @@ let cube = class {
         gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
         {
-            const vertexCount = 36;
+            const vertexCount = 12;
             const type = gl.UNSIGNED_SHORT;
             const offset = 0;
             gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
         }
+
     }
 };
