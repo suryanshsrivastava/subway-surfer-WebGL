@@ -2,6 +2,10 @@
 
 let player = class {
     constructor(gl, pos) {
+        this.score = 0;
+        this.gravity = 0;
+        this.jump = 4.5;
+        // this.speed = 2.5;
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 
@@ -159,7 +163,6 @@ let player = class {
             indices: indexBuffer,
             normal: normalBuffer,
         }
-
     }
 
     drawPlayer(gl, projectionMatrix, programInfo, deltaTime) {

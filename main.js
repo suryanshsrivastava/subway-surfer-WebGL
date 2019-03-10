@@ -19,6 +19,9 @@ var textureSneakers;
 
 var walls = [];
 var textureWall;
+
+var pillars = [];
+var texturePillars;
 main();
 
 //
@@ -30,7 +33,7 @@ var texturePlayer;
 var fsSource;
 var flag;
 var gray_scale_flag=0;
-var Up;
+var Up = 0;
 var speed;
 var shaderProgram;
 var programInfo;
@@ -61,23 +64,71 @@ function main() {
   }
   textureTrack = loadTexture(gl, 'track.png');
 
-  for (i=0; i<100; i++) {
-    coins.push(new coin(gl, [0, 1, -i*(5.0)]));
+  var initspawnz=-50;
+  var numCoins = 1000;
+  for (i=0; i<numCoins; i++) {
+    var spawnx = Math.floor((Math.random()*3)+1);
+    if(spawnx == 1) spawnx = 5;
+    else if (spawnx == 2) spawnx = 0;
+    else if (spawnx == 3) spawnx = -5;
+    
+    spawnz = Math.floor((Math.random()*trackLength)+1);
+      coins.push(new coin(gl, [spawnx, 1, spawnz+initspawnz]));
+      coins.push(new coin(gl, [spawnx, 1, spawnz+initspawnz-2]));
+      coins.push(new coin(gl, [spawnx, 1, spawnz+initspawnz-4]));
+    initspawnz-=10;
   }
   textureCoins = loadTexture(gl, 'coin.png');
   
-  for (i=0; i<100; i++) {
-    trains.push(new train(gl, [-5, 1, -i*(50.0)]));
+  initspawnz=-50;
+  var numPillars = 10;
+  for (i=0; i<numPillars; i++) {
+    var spawnx = Math.floor((Math.random()*3)+1);
+    if(spawnx == 1) spawnx = 5;
+    else if (spawnx == 2) spawnx = 0;
+    else if (spawnx == 3) spawnx = -5;
+    
+    pillars.push(new pillar(gl, [spawnx, 1, initspawnz]));
+    initspawnz-=200;
+  }
+  texturePillars = loadTexture(gl, 'brick-wall.png');
+
+  initspawnz=-100;
+  var numTrains = 10;
+  for (i=0; i<numTrains; i++) {
+    var spawnx = Math.floor((Math.random()*3)+1);
+    if(spawnx == 1) spawnx = 5;
+    else if (spawnx == 2) spawnx = 0;
+    else if (spawnx == 3) spawnx = -5;
+    
+    trains.push(new train(gl, [spawnx, 1, initspawnz]));
+    initspawnz-=200;
   }
   textureTrains = loadTexture(gl, 'train.png');
 
-  for (i=0; i<100; i++) {
-    jets.push(new jetpack(gl, [5, 1, -i*(50.0)]));
+  initspawnz=-100;
+  var numJets = 10;
+  for (i=0; i<numJets; i++) {
+    var spawnx = Math.floor((Math.random()*3)+1);
+    if(spawnx == 1) spawnx = 5;
+    else if (spawnx == 2) spawnx = 0;
+    else if (spawnx == 3) spawnx = -5;
+    
+    jets.push(new jetpack(gl, [spawnx, 1, initspawnz]));
+    initspawnz-=200;
   }
   textureJets = loadTexture(gl, 'jetpack.png');
-
-  for (i=0; i<100; i++) {
-    superSneakers.push(new superSneaker(gl, [5, 1, -i*(20.0)]));
+  
+  initspawnz=-50;
+  var numSneakers = 10;
+  for (i=0; i<numSneakers; i++) {
+    var spawnx = Math.floor((Math.random()*3)+1);
+    if(spawnx == 1) spawnx = 5;
+    else if (spawnx == 2) spawnx = 0;
+    else if (spawnx == 3) spawnx = -5;
+    
+    superSneakers.push(new superSneaker(gl, [spawnx, 1, initspawnz]));
+    initspawnz-=200;
   }
   textureSneakers = loadTexture(gl, 'SuperSneakers.png');
   // If we don't have a GL context, give up now
@@ -116,9 +167,8 @@ function main() {
       vLighting = ambientLight + (directionalLightColor * directional);
     }
   `;
-
+    
   var then = 0;
-
   // Draw the scene repeatedly
   function render(now) {
     now *= 0.001;  // convert to seconds
@@ -154,22 +204,82 @@ function main() {
     // for aVertexPosition, aVevrtexColor and also
     // look up uniform locations.
     programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
-      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-      normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
-      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
-    },
-  };
+      program: shaderProgram,
+      attribLocations: {
+        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
+        textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
+      },
+      uniformLocations: {
+        projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+        modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+        normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
+        uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
+      },
+    };
+
+    //Collision detection
+    for (i=0; i<trains.length; i++) {
+        if(detectionCollision(jake, trains[i], 2, 5, 2, 10, 2, 40)){
+            if (jake.pos[1] <= 5) {
+                console.log('dead');
+                delete jake;
+                window.alert('dedededed' + jake.score)
+            }
+            else if (jake.pos[1] > 5) {
+                jake.pos[1]=7;
+            }
+        }
+    }
+    for (i=0; i<pillars.length; i++) {
+      if(detectionCollision(jake, pillars[i], 2, 5, 2, 10, 2, 5)){
+          if (jake.pos[1] <= 5) {
+              delete jake;
+              window.alert('dedededed ' + jake.score)
+          }
+          else if (jake.pos[1] > 5) {
+              jake.pos[1]=7;
+          }
+      }
+    }
+    for (i=0; i<coins.length; i++) {
+      if(detectionCollision(jake, coins[i], 2, 1, 2, 1, 2, 0.02)){
+        jake.score += 1;
+        coins[i].pos[2] = 100;
+      }
+    }
+    for (i=0; i<jets.length; i++) {
+      if(detectionCollision(jake, jets[i], 2, 1, 2, 1, 2, 0.02)){
+        jets[i].collected = 1;
+      }
+      if(Math.abs(jake.pos[2]-jets[i].pos[2])<50 && jets[i].collected){
+        jake.score += 10;
+        jake.pos[1] = 7;
+        jake.pos[1] += jake.gravity;
+      }else{
+          jets[i].collected = 0;
+        }
+    }
+    
+    for (i=0; i<superSneakers.length; i++) {
+      if(detectionCollision(jake, superSneakers[i], 2, 1, 2, 1, 2, 0.02)){
+        superSneakers[i].collected = 1;
+      }
+      if(Math.abs(jake.pos[2]-superSneakers[i].pos[2])<100 && superSneakers[i].collected){
+        jake.score += 10;
+        jake.jump = 10;
+        console.log("jumped"+jake.jump);
+        break;
+      }else{
+          superSneakers[i].collected = 0;
+          jake.jump = 4.5;
+        }
+    }
+
+
+
 
     drawScene(gl, programInfo, deltaTime);
-
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
@@ -212,15 +322,16 @@ function drawScene(gl, programInfo, deltaTime) {
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
   var cameraMatrix = mat4.create();
-  mat4.translate(cameraMatrix, cameraMatrix, [0, 5, 5]);
+  mat4.translate(cameraMatrix, cameraMatrix, [0, 10, 5]);
   var cameraPosition = [
     cameraMatrix[12],
     cameraMatrix[13]+2,
-    cameraMatrix[14]+jake.pos[2]+10,
+    cameraMatrix[14]+jake.pos[2]+25,
   ];
   var up = [0, 1, 0];
   mat4.lookAt(cameraMatrix, cameraPosition, [0,0,jake.pos[2]], up);
-  var viewMatrix = cameraMatrix;//mat4.create();
+  var viewMatrix = cameraMatrix;
+  //mat4.create();
   //mat4.invert(viewMatrix, cameraMatrix);
   var viewProjectionMatrix = mat4.create();
   mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
@@ -229,11 +340,7 @@ function drawScene(gl, programInfo, deltaTime) {
     if (event.defaultPrevented) {
       return; // Do nothing if the event was already processed
     }
-    // console.log(event.key);
     switch (event.key) {
-      // case "ArrowDown":        
-      //   down = 1;
-      //   break;
       case " ":
         Up = 1;
         break;
@@ -244,17 +351,10 @@ function drawScene(gl, programInfo, deltaTime) {
         flag = 2;
         break;
       case "ArrowUp":
-        // if(gray_scale_flag == 0){
           gray_scale_flag = 1;
-          console.log("lights off")
-        // }
         break;
       case "ArrowDown":
-      // gray_scale_flag = 1;
-          // if(gray_scale_flag){
             gray_scale_flag = 0;
-            console.log("lights on");
-          // }
         break;
       default:
         return; // Quit when this doesn't handle the key event.
@@ -262,14 +362,13 @@ function drawScene(gl, programInfo, deltaTime) {
     // Cancel the default action to avoid it being handled twice
     event.preventDefault();
   }, true);
-  console.log(gray_scale_flag);
   //move left and right on the tracks  
   if(flag==1) {
     if(jake.pos[0] <= -5) {
       flag = 0;
     }
     else{
-      jake.pos[0]-=0.5;
+      jake.pos[0]-=1;
     }
   }
   if(flag==2) {
@@ -277,34 +376,29 @@ function drawScene(gl, programInfo, deltaTime) {
       flag = 0;
     }
     else{
-      jake.pos[0]+=0.5;
+      jake.pos[0]+=1;
     }
   }
   if ((jake.pos[0] >= 5) || (jake.pos[0] <= -5)  || (jake.pos[0] >= -0.1 && jake.pos[0] <= 0.1) ) flag=0;
   
   //Constantly keep moving forward on the tracks
-  speed = 0.5;
+  speed = 1;
   jake.pos[2]-=speed;
 
   jump = 0.5;
-  gravity = 0.3;
-
+  jake.gravity = 1;
   if (Up == 1) {
-    // console.log('up:'+Up); 
-    if(jake.pos[1] >= 7){
+    if(jake.pos[1] >= jake.jump){
       Up = 0;
-      // console.log('upto:'+jake.pos[1]);
     }
     else{
       jake.pos[1] += jump;
-      console.log('position:'+jake.pos[1]);
     }
   }
   if(jake.pos[1] >= 1 && Up == 0){
-    console.log(jake.pos[1]);
-    jake.pos[1]-=gravity;
+      jake.pos[1]-=jake.gravity;
   }
-
+  
   jake.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime);
   
   var i;
@@ -317,18 +411,28 @@ function drawScene(gl, programInfo, deltaTime) {
   for (i=0; i<t3.length; i++) {
     t3[i].drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
+  
   for (i=0; i<coins.length; i++) {
     coins[i].drawCoin(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
+  
   for (i=0; i<walls.length; i++) {
     walls[i].drawWall(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
+  
   for (i=0; i<trains.length; i++) {
+    trains[i].pos[2]+=5;
     trains[i].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
+
+  for (i=0; i<pillars.length; i++) {
+    pillars[i].drawPillar(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+
   for (i=0; i<jets.length; i++) {
     jets[i].drawJet(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
+  
   for (i=0; i<superSneakers.length; i++) {
     superSneakers[i].drawSuperSneaker(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
@@ -371,9 +475,6 @@ function loadTexture(gl, url) {
     if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
        // Yes, it's a power of 2. Generate mips.
        gl.generateMipmap(gl.TEXTURE_2D);
-      //  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      //  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-      //  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     } else {
        // No, it's not a power of 2. Turn off mips and set
        // wrapping to clamp to edge
@@ -439,4 +540,10 @@ function loadShader(gl, type, source) {
   }
 
   return shader;
+}
+
+function detectionCollision(a, b, width_a, width_b, height_a, height_b, length_a, length_b) {
+  return (Math.abs(a.pos[0] - b.pos[0]) * 2 < (width_a + width_b)) &&
+         (Math.abs(a.pos[1] - b.pos[1]) * 2 < (height_a + height_b)) &&
+         (Math.abs(a.pos[2] - b.pos[2]) * 2 < (length_a + length_b));
 }

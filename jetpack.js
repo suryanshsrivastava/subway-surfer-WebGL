@@ -2,6 +2,7 @@
 
 let jetpack = class {
     constructor(gl, pos) {
+        this.collected = 0;
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 

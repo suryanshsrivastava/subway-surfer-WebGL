@@ -268,6 +268,5 @@ let train = class {
             const offset = 0;
             gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
         }
-
     }
 };

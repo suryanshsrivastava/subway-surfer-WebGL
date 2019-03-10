@@ -1,42 +1,41 @@
 /// <reference path="webgl.d.ts" />
 
-let superSneaker = class {
+let pillar = class {
     constructor(gl, pos) {
-        this.collected = 0;
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 
         this.positions = [
             // Front face
-            -0.5, -0.5, 0.01,
-            0.5, -0.5, 0.01,
-            0.5, 0.5, 0.01,
-            -0.5, 0.5, 0.01,
-            //Back face,
-            -0.5, -0.5, -0.01,
-            0.5, -0.5, -0.01,
-            0.5, 0.5, -0.01,
-            -0.5, 0.5, -0.01,
-            //Top face,
-            -0.5, 0.5, -0.01,
-            0.5, 0.5, -0.01,
-            0.5, 0.5, 0.01,
-            -0.5, 0.5, 0.01,
-            //Bottom face,
-            -0.5, -0.5, -0.01,
-            0.5, -0.5, -0.01,
-            0.5, -0.5, 0.01,
-            -0.5, -0.5, 0.01,
-            //Left face,
-            -0.5, -0.5, -0.01,
-            -0.5, 0.5, -0.01,
-            -0.5, 0.5, 0.01,
-            -0.5, -0.5, 0.01,
-            //Right face,
-            0.5, -0.5, -0.01,
-            0.5, 0.5, -0.01,
-            0.5, 0.5, 0.01,
-            0.5, -0.5, 0.01,
+            -2.5, -5.0, 2.5,
+            2.5, -5.0, 2.5,
+            2.5, 5.0, 2.5,
+            -2.5, 5.0, 2.5,
+            //Back fa2.5,
+            -2.5, -5.0, 2.5,
+            2.5, -5.0, -2.5,
+            2.5, 5.0, -2.5,
+            -2.5, 5.0, -2.5,
+            //Top fa2.5,
+            -2.5, 5.0, -2.5,
+            2.5, 5.0, -2.5,
+            2.5, 5.0, 2.5,
+            -2.5, 5.0, 2.5,
+            //Bottom fa2.5,
+            -2.5, -5.0, 2.5,
+            2.5, -5.0, -2.5,
+            2.5, -5.0, 2.5,
+            -2.5, -5.0, 2.5,
+            //Left fa2.5,
+            -2.5, -5.0, 2.5,
+            -2.5, 5.0, -2.5,
+            -2.5, 5.0, 2.5,
+            -2.5, -5.0, 2.5,
+            //Right fa2.5,
+            2.5, -5.0, -2.5,
+            2.5, 5.0, -2.5,
+            2.5, 5.0, 2.5,
+            2.5, -5.0, 2.5,
         ];
 
         this.rotation = 0;
@@ -79,11 +78,13 @@ let superSneaker = class {
             1.0,  1.0,
             1.0,  0.0,
             0.0,  0.0,
+                    
             // Back
             0.0,  1.0,
             1.0,  1.0,
             1.0,  0.0,
             0.0,  0.0,
+            
             // Top
             0.0,  0.0,
             1.0,  0.0,
@@ -109,9 +110,9 @@ let superSneaker = class {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates),
                         gl.STATIC_DRAW);
 
-                        const normalBuffer = gl.createBuffer();
+        const normalBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-
+        
         const vertexNormals = [
           // Front
            0.0,  0.0,  1.0,
@@ -149,19 +150,19 @@ let superSneaker = class {
           -1.0,  0.0,  0.0,
           -1.0,  0.0,  0.0
         ];
-
+        
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals),
-                gl.STATIC_DRAW);
+                      gl.STATIC_DRAW);
         this.buffer = {
             position: this.positionBuffer,
-            indices: indexBuffer,
             textureCoord: textureCoordBuffer,
+            indices: indexBuffer,
             normal: normalBuffer,
         }
 
     }
 
-    drawSuperSneaker(gl, projectionMatrix, programInfo, deltaTime) {
+    drawPillar(gl, projectionMatrix, programInfo, deltaTime) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -174,7 +175,7 @@ let superSneaker = class {
         mat4.rotate(modelViewMatrix,
             modelViewMatrix,
             this.rotation,
-            [0, 1, 0]);
+            [1, 0, 1]);
             mat4.rotate(modelViewMatrix,
                 modelViewMatrix,
                 this.rotation,
@@ -182,6 +183,7 @@ let superSneaker = class {
         const normalMatrix = mat4.create();
         mat4.invert(normalMatrix, modelViewMatrix);
         mat4.transpose(normalMatrix, normalMatrix);
+              
 
         {
             const numComponents = 3;
@@ -247,14 +249,15 @@ let superSneaker = class {
         gl.uniformMatrix4fv(
             programInfo.uniformLocations.modelViewMatrix,
             false,
-            modelViewMatrix);    
+            modelViewMatrix);
         gl.uniformMatrix4fv(
             programInfo.uniformLocations.normalMatrix,
             false,
             normalMatrix);
             gl.activeTexture(gl.TEXTURE0);
+
             // Bind the texture to texture unit 0
-            gl.bindTexture(gl.TEXTURE_2D, textureSneakers);
+            gl.bindTexture(gl.TEXTURE_2D, texturePillars);
     
             // Tell the shader we bound the texture to texture unit 0
             gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
