@@ -22,6 +22,11 @@ var textureWall;
 
 var pillars = [];
 var texturePillars;
+
+var barricades = [];
+var textureBarricade;
+
+var music;
 main();
 
 //
@@ -30,6 +35,8 @@ main();
 
 var jake;
 var texturePlayer;
+var thulla;
+var texturePolice;
 var fsSource;
 var flag;
 var gray_scale_flag=0;
@@ -42,9 +49,15 @@ function main() {
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-  jake = new player(gl, [0, 0.5, -10.0]);
+  music = new sound("theme.mp3");
+  music.play();
+
+  jake = new player(gl, [0, 0.5, -5.0]);
   texturePlayer = loadTexture(gl, 'surfer.png');
-  
+
+  thulla = new police(gl, [0, 0.5, -2.5]);
+  texturePolice = loadTexture(gl, 'police.png');
+
   var i;
   for (i=0; i<100; i++) {
     walls.push(new wall(gl, [0, 0.0, -50*i]));
@@ -64,7 +77,7 @@ function main() {
   }
   textureTrack = loadTexture(gl, 'track.png');
 
-  var initspawnz=-50;
+  var initspawnz=-20;
   var numCoins = 1000;
   for (i=0; i<numCoins; i++) {
     var spawnx = Math.floor((Math.random()*3)+1);
@@ -80,7 +93,7 @@ function main() {
   }
   textureCoins = loadTexture(gl, 'coin.png');
   
-  initspawnz=-50;
+  initspawnz=-100;
   var numPillars = 10;
   for (i=0; i<numPillars; i++) {
     var spawnx = Math.floor((Math.random()*3)+1);
@@ -93,7 +106,7 @@ function main() {
   }
   texturePillars = loadTexture(gl, 'brick-wall.png');
 
-  initspawnz=-100;
+  initspawnz=-200;
   var numTrains = 10;
   for (i=0; i<numTrains; i++) {
     var spawnx = Math.floor((Math.random()*3)+1);
@@ -106,6 +119,21 @@ function main() {
   }
   textureTrains = loadTexture(gl, 'train.png');
 
+  var initspawnz=-50;
+  var numBarricades = 100;
+  for (i=0; i<numBarricades; i++) {
+    var spawnx = Math.floor((Math.random()*3)+1);
+    if(spawnx == 1) spawnx = 5;
+    else if (spawnx == 2) spawnx = 0;
+    else if (spawnx == 3) spawnx = -5;
+    
+    spawnz = Math.floor((Math.random()*trackLength)+1);
+      barricades.push(new barricade(gl, [spawnx, 1, spawnz+initspawnz]));
+      barricades.push(new barricade(gl, [spawnx, 1, spawnz+initspawnz-25]));
+    initspawnz-=50;
+  }
+  textureBarricade = loadTexture(gl, 'barricade.png');
+  
   initspawnz=-100;
   var numJets = 10;
   for (i=0; i<numJets; i++) {
@@ -222,7 +250,6 @@ function main() {
     for (i=0; i<trains.length; i++) {
         if(detectionCollision(jake, trains[i], 2, 5, 2, 10, 2, 40)){
             if (jake.pos[1] <= 5) {
-                console.log('dead');
                 delete jake;
                 window.alert('dedededed' + jake.score)
             }
@@ -268,12 +295,22 @@ function main() {
       if(Math.abs(jake.pos[2]-superSneakers[i].pos[2])<100 && superSneakers[i].collected){
         jake.score += 10;
         jake.jump = 10;
-        console.log("jumped"+jake.jump);
         break;
       }else{
           superSneakers[i].collected = 0;
           jake.jump = 4.5;
         }
+    }
+    for (i=0; i<barricades.length; i++) {
+      if(detectionCollision(jake, barricades[i], 2, 5, 2, 3, 2, 0.5)){
+        jake.speed -= 1;
+        jake.hit+=1;
+        if(jake.hit == 2){
+          delete jake;
+          window.alert('dedededed ' + jake.score)
+          jake.hit =0;
+        }
+      }
     }
 
 
@@ -356,6 +393,8 @@ function drawScene(gl, programInfo, deltaTime) {
       case "ArrowDown":
             gray_scale_flag = 0;
         break;
+      case "Fn":
+
       default:
         return; // Quit when this doesn't handle the key event.
             }
@@ -382,9 +421,11 @@ function drawScene(gl, programInfo, deltaTime) {
   if ((jake.pos[0] >= 5) || (jake.pos[0] <= -5)  || (jake.pos[0] >= -0.1 && jake.pos[0] <= 0.1) ) flag=0;
   
   //Constantly keep moving forward on the tracks
-  speed = 1;
-  jake.pos[2]-=speed;
+  // jake.speed = 1;
+  if(jake.speed <= 2)
+    jake.speed += 0.1;
 
+  jake.pos[2] -= jake.speed; 
   jump = 0.5;
   jake.gravity = 1;
   if (Up == 1) {
@@ -400,7 +441,9 @@ function drawScene(gl, programInfo, deltaTime) {
   }
   
   jake.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime);
-  
+  thulla.pos[2]-=jake.speed;
+  if(jake.speed < 2)
+    thulla.drawPolice(gl, viewProjectionMatrix, programInfo, deltaTime);
   var i;
   for (i=0; i<t1.length; i++) {
     t1[i].drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime)
@@ -435,6 +478,10 @@ function drawScene(gl, programInfo, deltaTime) {
   
   for (i=0; i<superSneakers.length; i++) {
     superSneakers[i].drawSuperSneaker(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+
+  for (i=0; i<barricades.length; i++) {
+    barricades[i].drawBarricade(gl, viewProjectionMatrix, programInfo, deltaTime)
   }
 }
 
@@ -546,4 +593,19 @@ function detectionCollision(a, b, width_a, width_b, height_a, height_b, length_a
   return (Math.abs(a.pos[0] - b.pos[0]) * 2 < (width_a + width_b)) &&
          (Math.abs(a.pos[1] - b.pos[1]) * 2 < (height_a + height_b)) &&
          (Math.abs(a.pos[2] - b.pos[2]) * 2 < (length_a + length_b));
+}
+
+function sound(src) {
+  this.sound = document.createElement("audio");
+  this.sound.src = src;
+  this.sound.setAttribute("preload", "auto");
+  this.sound.setAttribute("controls", "none");
+  this.sound.style.display = "none";
+  document.body.appendChild(this.sound);
+  this.play = function(){
+    this.sound.play();
+  }
+  this.stop = function(){
+    this.sound.pause();
+  }
 }

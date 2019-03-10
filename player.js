@@ -5,7 +5,8 @@ let player = class {
         this.score = 0;
         this.gravity = 0;
         this.jump = 4.5;
-        // this.speed = 2.5;
+        this.speed = 1;
+        this.hit = 0;
         this.positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
 
