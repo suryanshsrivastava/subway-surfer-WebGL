@@ -7,15 +7,15 @@ let wall = class {
 
         this.positions = [ 
              //Left Wall
-             -10.0, 0.0, -1000.0,
-             -10.0, 0.0, 0.0,
-             -10.0, 10.0, 0.0,
-             -10.0, 10.0, -1000.0,
+             -7.5, -1.0, -50.0,
+             -7.5, -1.0, 0.0,
+             -7.5, 6.0, 0.0,
+             -7.5, 6.0, -50.0,
              //Right Wall
-              10.0, 0.0, -1000.0,
-              10.0, 0.0, 0.0,
-              10.0, 10.0, 0.0,
-              10.0, 10.0, -1000.0,
+              7.5, -1.0, -50.0,
+              7.5, -1.0, 0.0,
+              7.5, 6.0, 0.0,
+              7.5, 6.0, -50.0,
         ];
 
         this.rotation = 0;
@@ -50,32 +50,11 @@ let wall = class {
         gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
         
         const textureCoordinates = [
-          // Front
-        //   0.0,  0.0,
-        //   1.0,  0.0,
-        //   1.0,  1.0,
-        //   0.0,  1.0,
-          // Back
-        //   0.0,  0.0,
-        //   1.0,  0.0,
-        //   1.0,  1.0,
-        //   0.0,  1.0,
-          // Top
           0.0,  0.0,
           1.0,  0.0,
           1.0,  1.0,
           0.0,  1.0,
-          // Bottom
-          0.0,  0.0,
-          1.0,  0.0,
-          1.0,  1.0,
-          0.0,  1.0,
-          // Right
-          0.0,  0.0,
-          1.0,  0.0,
-          1.0,  1.0,
-          0.0,  1.0,
-          // Left
+
           0.0,  0.0,
           1.0,  0.0,
           1.0,  1.0,
@@ -98,7 +77,7 @@ let wall = class {
         const indices = [
             0, 1, 2,    0, 2, 3, // front
             4, 5, 6,    4, 6, 7,
-            8, 9, 10,   8, 10, 11,
+            // 8, 9, 10,   8, 10, 11,
             // 12, 13, 14, 12, 14, 15,
             // 16, 17, 18, 16, 18, 19,
             // 20, 21, 22, 20, 22, 23, 
@@ -118,7 +97,7 @@ let wall = class {
 
     }
 
-    drawWall(gl, projectionMatrix, programInfo, texture, deltaTime) {
+    drawWall(gl, projectionMatrix, programInfo, deltaTime) {
         const modelViewMatrix = mat4.create();
         mat4.translate(
             modelViewMatrix,
@@ -154,7 +133,7 @@ let wall = class {
         // Tell WebGL how to pull out the colors from the color buffer
         // into the vertexColor attribute.
         {
-            const numComponents = 4;
+            const numComponents = 2;
             const type = gl.FLOAT;
             const normalize = false;
             const stride = 0;
@@ -196,7 +175,7 @@ let wall = class {
         gl.activeTexture(gl.TEXTURE0);
                 
         // Bind the texture to texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.bindTexture(gl.TEXTURE_2D, textureWall);
                 
         // Tell the shader we bound the texture to texture unit 0
         gl.uniform1i(programInfo.uniformLocations.uSampler, 0);

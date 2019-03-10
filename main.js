@@ -1,24 +1,85 @@
 var cubeRotation = 0.0;
 
+var t1 = [];
+var t2 = [];
+var t3 = [];
+var textureTrack;
+
+var coins = [];
+var textureCoins;
+
+var trains = [];
+var textureTrains;
+
+var jets = [];
+var textureJets;
+
+var superSneakers = [];
+var textureSneakers;
+
+var walls = [];
+var textureWall;
 main();
 
 //
 // Start here
 //
 
-var c;
+var jake;
 var texturePlayer;
-var w;
-var textureWall;
+var fsSource;
+var flag;
+var gray_scale_flag=0;
+var Up;
+var speed;
+var shaderProgram;
+var programInfo;
 
 function main() {
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-  c = new cube(gl, [0, 5.0, -10.0]);
+  jake = new player(gl, [0, 0.5, -10.0]);
   texturePlayer = loadTexture(gl, 'surfer.png');
-  w = new wall(gl, [0, 0.0, 0.0]);
-  textureWall = loadTexture(gl, 'brick-wall.jpg');
+  
+  var i;
+  for (i=0; i<100; i++) {
+    walls.push(new wall(gl, [0, 0.0, -50*i]));
+  }
+  textureWall = loadTexture(gl, 'brick-wall.png');
+  
+  
+  var trackLength = 1000;
+  for (i=0; i<trackLength; i++) {
+    t1.push(new track(gl, [-5, -1, -i*(5.0)]));
+  }
+  for (i=0; i<trackLength; i++) {
+    t2.push(new track(gl, [0, -1, -i*(5.0)]));
+  }
+  for (i=0; i<trackLength; i++) {
+    t3.push(new track(gl, [5, -1, -i*(5.0)]));
+  }
+  textureTrack = loadTexture(gl, 'track.png');
+
+  for (i=0; i<100; i++) {
+    coins.push(new coin(gl, [0, 1, -i*(5.0)]));
+  }
+  textureCoins = loadTexture(gl, 'coin.png');
+  
+  for (i=0; i<100; i++) {
+    trains.push(new train(gl, [-5, 1, -i*(50.0)]));
+  }
+  textureTrains = loadTexture(gl, 'train.png');
+
+  for (i=0; i<100; i++) {
+    jets.push(new jetpack(gl, [5, 1, -i*(50.0)]));
+  }
+  textureJets = loadTexture(gl, 'jetpack.png');
+
+  for (i=0; i<100; i++) {
+    superSneakers.push(new superSneaker(gl, [5, 1, -i*(20.0)]));
+  }
+  textureSneakers = loadTexture(gl, 'SuperSneakers.png');
   // If we don't have a GL context, give up now
 
   if (!gl) {
@@ -29,77 +90,32 @@ function main() {
   // Vertex shader program
   const vsSource = `
     attribute vec4 aVertexPosition;
+    attribute vec3 aVertexNormal;
     attribute vec2 aTextureCoord;
 
+    uniform mat4 uNormalMatrix;
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
     varying highp vec2 vTextureCoord;
+    varying highp vec3 vLighting;
 
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vTextureCoord = aTextureCoord;
+
+      // Apply lighting effect
+
+      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+      highp vec3 directionalLightColor = vec3(1, 1, 1);
+      highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+
+      highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+
+      highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+      vLighting = ambientLight + (directionalLightColor * directional);
     }
   `;
-  // const vsSource = `
-  //   attribute vec4 aVertexPosition;
-  //   attribute vec4 aVertexColor;
-
-  //   uniform mat4 uModelViewMatrix;
-  //   uniform mat4 uProjectionMatrix;
-
-  //   varying lowp vec4 vColor;
-
-  //   void main(void) {
-  //     gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-  //     vColor = aVertexColor;
-  //   }
-  // `;
-
-  // Fragment shader program
-  
-  const fsSource = `
-    varying highp vec2 vTextureCoord;
-
-    uniform sampler2D uSampler;
-
-    void main(void) {
-      gl_FragColor = texture2D(uSampler, vTextureCoord);
-    }
-  `;
-  // const fsSource = `
-  //   varying lowp vec4 vColor;
-
-  //   void main(void) {
-  //     gl_FragColor = vColor;
-  //   }
-  // `;
-
-  // Initialize a shader program; this is where all the lighting
-  // for the vertices and so forth is established.
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
-
-  // Collect all the info needed to use the shader program.
-  // Look up which attributes our shader program is using
-  // for aVertexPosition, aVevrtexColor and also
-  // look up uniform locations.
-  const programInfo = {
-    program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
-      // vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
-    },
-  };
-
-  // Here's where we call the routine that builds all the
-  // objects we'll be drawing.
-  //const buffers
 
   var then = 0;
 
@@ -108,6 +124,49 @@ function main() {
     now *= 0.001;  // convert to seconds
     const deltaTime = now - then;
     then = now;
+
+    // Fragment shader program
+    var colorgradient;
+    if(gray_scale_flag) {
+      colorgradient = `precision highp float;
+      vec4 color = texture2D(uSampler, vTextureCoord);
+      float gray = dot(color.rgb,vec3(0.299,0.587,0.114));
+      gl_FragColor = vec4(vec3(gray),1.0);}`
+    }
+    else {
+      colorgradient = `gl_FragColor = vec4(texelColor.rgb * vLighting, texelColor.a);}`
+    }
+    fsSource = `
+      varying highp vec2 vTextureCoord;
+      varying highp vec3 vLighting;
+
+      uniform sampler2D uSampler;
+
+      void main(void) {
+      highp vec4 texelColor = texture2D(uSampler, vTextureCoord);` + colorgradient;
+    
+    // Initialize a shader program; this is where all the lighting
+    // for the vertices and so forth is established.
+    shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+  
+    // Collect all the info needed to use the shader program.
+    // Look up which attributes our shader program is using
+    // for aVertexPosition, aVevrtexColor and also
+    // look up uniform locations.
+    programInfo = {
+    program: shaderProgram,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
+      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
+    },
+  };
 
     drawScene(gl, programInfo, deltaTime);
 
@@ -120,7 +179,7 @@ function main() {
 // Draw the scene.
 //
 function drawScene(gl, programInfo, deltaTime) {
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
+  gl.clearColor(127.0/255.0, 218.0/255.0, 255.0/255.0, 1);  // Clear to black, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
   gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
@@ -152,30 +211,127 @@ function drawScene(gl, programInfo, deltaTime) {
 
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
-    var cameraMatrix = mat4.create();
-    mat4.translate(cameraMatrix, cameraMatrix, [0, 5, 0]);
-    var cameraPosition = [
-      cameraMatrix[12],
-      cameraMatrix[13],
-      cameraMatrix[14],
-    ];
+  var cameraMatrix = mat4.create();
+  mat4.translate(cameraMatrix, cameraMatrix, [0, 5, 5]);
+  var cameraPosition = [
+    cameraMatrix[12],
+    cameraMatrix[13]+2,
+    cameraMatrix[14]+jake.pos[2]+10,
+  ];
+  var up = [0, 1, 0];
+  mat4.lookAt(cameraMatrix, cameraPosition, [0,0,jake.pos[2]], up);
+  var viewMatrix = cameraMatrix;//mat4.create();
+  //mat4.invert(viewMatrix, cameraMatrix);
+  var viewProjectionMatrix = mat4.create();
+  mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
 
-    var up = [0, 1, 0];
+  window.addEventListener("keydown", function (event) {
+    if (event.defaultPrevented) {
+      return; // Do nothing if the event was already processed
+    }
+    // console.log(event.key);
+    switch (event.key) {
+      // case "ArrowDown":        
+      //   down = 1;
+      //   break;
+      case " ":
+        Up = 1;
+        break;
+      case "ArrowLeft":
+        flag = 1;
+        break;
+      case "ArrowRight":
+        flag = 2;
+        break;
+      case "ArrowUp":
+        // if(gray_scale_flag == 0){
+          gray_scale_flag = 1;
+          console.log("lights off")
+        // }
+        break;
+      case "ArrowDown":
+      // gray_scale_flag = 1;
+          // if(gray_scale_flag){
+            gray_scale_flag = 0;
+            console.log("lights on");
+          // }
+        break;
+      default:
+        return; // Quit when this doesn't handle the key event.
+            }
+    // Cancel the default action to avoid it being handled twice
+    event.preventDefault();
+  }, true);
+  console.log(gray_scale_flag);
+  //move left and right on the tracks  
+  if(flag==1) {
+    if(jake.pos[0] <= -5) {
+      flag = 0;
+    }
+    else{
+      jake.pos[0]-=0.5;
+    }
+  }
+  if(flag==2) {
+    if(jake.pos[0] >= 5) {
+      flag = 0;
+    }
+    else{
+      jake.pos[0]+=0.5;
+    }
+  }
+  if ((jake.pos[0] >= 5) || (jake.pos[0] <= -5)  || (jake.pos[0] >= -0.1 && jake.pos[0] <= 0.1) ) flag=0;
+  
+  //Constantly keep moving forward on the tracks
+  speed = 0.5;
+  jake.pos[2]-=speed;
 
-    mat4.lookAt(cameraMatrix, cameraPosition, c.pos, up);
+  jump = 0.5;
+  gravity = 0.3;
 
-    var viewMatrix = cameraMatrix;//mat4.create();
+  if (Up == 1) {
+    // console.log('up:'+Up); 
+    if(jake.pos[1] >= 7){
+      Up = 0;
+      // console.log('upto:'+jake.pos[1]);
+    }
+    else{
+      jake.pos[1] += jump;
+      console.log('position:'+jake.pos[1]);
+    }
+  }
+  if(jake.pos[1] >= 1 && Up == 0){
+    console.log(jake.pos[1]);
+    jake.pos[1]-=gravity;
+  }
 
-    //mat4.invert(viewMatrix, cameraMatrix);
-
-    var viewProjectionMatrix = mat4.create();
-
-    mat4.multiply(viewProjectionMatrix, projectionMatrix, viewMatrix);
-
-  c.drawCube(gl, viewProjectionMatrix, programInfo, texturePlayer, deltaTime);
-  w.drawWall(gl, viewProjectionMatrix, programInfo, textureWall, deltaTime);
-  //c1.drawCube(gl, projectionMatrix, programInfo, deltaTime);
-
+  jake.drawPlayer(gl, viewProjectionMatrix, programInfo, deltaTime);
+  
+  var i;
+  for (i=0; i<t1.length; i++) {
+    t1[i].drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<t2.length; i++) {
+    t2[i].drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<t3.length; i++) {
+    t3[i].drawTrack(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<coins.length; i++) {
+    coins[i].drawCoin(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<walls.length; i++) {
+    walls[i].drawWall(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<trains.length; i++) {
+    trains[i].drawTrain(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<jets.length; i++) {
+    jets[i].drawJet(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
+  for (i=0; i<superSneakers.length; i++) {
+    superSneakers[i].drawSuperSneaker(gl, viewProjectionMatrix, programInfo, deltaTime)
+  }
 }
 
 //
@@ -215,6 +371,9 @@ function loadTexture(gl, url) {
     if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
        // Yes, it's a power of 2. Generate mips.
        gl.generateMipmap(gl.TEXTURE_2D);
+      //  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      //  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      //  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     } else {
        // No, it's not a power of 2. Turn off mips and set
        // wrapping to clamp to edge
